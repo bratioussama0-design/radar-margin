@@ -5,24 +5,79 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Margin Radar</title>
 <style>
-:root{--bg:#F9FBFD;--surface:#FFFFFF;--line:#E2E8F0;--text:#0F172A;--muted:#64748B;--sky:#0EA5E9;--sky2:#38BDF8;--tint:#E0F2FE;--good:#059669;--bad:#DC2626;--warn:#D97706;--badbg:#FEE2E2;--warnbg:#FEF3C7;--goodbg:#D1FAE5;--shadow:0 8px 30px rgba(15,23,42,.12);--scrim:rgba(15,23,42,.38);color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0B1220;--surface:#111A2B;--line:#1F2B40;--text:#E6EDF7;--muted:#8DA0BC;--tint:#0C2A3E;--badbg:#3A1618;--warnbg:#3A2A0E;--goodbg:#0F2E25;--shadow:0 8px 30px rgba(0,0,0,.5);--scrim:rgba(0,0,0,.55);color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0B1220;--surface:#111A2B;--line:#1F2B40;--text:#E6EDF7;--muted:#8DA0BC;--tint:#0C2A3E;--badbg:#3A1618;--warnbg:#3A2A0E;--goodbg:#0F2E25;--shadow:0 8px 30px rgba(0,0,0,.5);--scrim:rgba(0,0,0,.55);color-scheme:dark}
+:root{
+  --bg:#F9FBFD;
+  --surface:#FFFFFF;
+  --line:#E2E8F0;
+  --text:#0F172A;
+  --muted:#64748B;
+  --sky:#0EA5E9;
+  --sky2:#38BDF8;
+  --tint:#E0F2FE;
+  --good:#059669;
+  --bad:#DC2626;
+  --warn:#D97706;
+  --badbg:#FEE2E2;
+  --warnbg:#FEF3C7;
+  --goodbg:#D1FAE5;
+  --shadow:0 8px 30px rgba(15,23,42,.12);
+  --scrim:rgba(15,23,42,.38);
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+html,body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font:14px/1.45 Inter,"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
-button{font:inherit;color:inherit;cursor:pointer}
-button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-visible{
+  outline:2px solid var(--sky);
+  outline-offset:2px;
+}
 .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
 header{position:relative;background:var(--tint);padding:22px 0 54px;overflow:hidden}
 header h1{margin:0;font-size:20px;letter-spacing:-.01em}
 header p{margin:2px 0 0;color:var(--muted)}
-.top{display:flex;justify-content:space-between;align-items:center;gap:12px;position:relative;z-index:1}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;position:relative;z-index:1;flex-wrap:wrap}
+.top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .waves{position:absolute;left:0;right:0;bottom:-1px;width:100%;height:46px;display:block}
-.pill{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:12px;color:var(--muted)}
+.pill{
+  border:1px solid var(--line);
+  background:var(--surface);
+  border-radius:999px;
+  padding:5px 12px;
+  font-size:12px;
+  color:var(--muted);
+}
+.btn-top{
+  border:1px solid var(--sky);
+  background:var(--sky);
+  color:#fff;
+  border-radius:999px;
+  padding:5px 13px;
+  font-size:12px;
+  font-weight:600;
+}
+.btn-top.sec{
+  background:var(--surface);
+  color:var(--text);
+  border-color:var(--line);
+}
 main{margin-top:-18px;position:relative;z-index:1;padding-bottom:40px}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
+}
 .kpi{padding:14px 16px}
 .kpi small{color:var(--muted);display:block;margin-bottom:6px}
 .kpi b{font-size:22px;letter-spacing:-.02em}
@@ -30,14 +85,33 @@ main{margin-top:-18px;position:relative;z-index:1;padding-bottom:40px}
 .kpi i{font-style:normal;font-size:12px;color:var(--muted);display:block;margin-top:2px}
 h2{font-size:13px;margin:26px 0 10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
 .prio{display:grid;gap:8px}
-.prio button{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;text-align:left;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;transition:transform .15s,border-color .15s}
+.prio button{
+  display:grid;
+  grid-template-columns:28px 1fr auto;
+  gap:12px;
+  align-items:center;
+  text-align:left;
+  padding:12px 14px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+  transition:transform .15s,border-color .15s;
+}
 .prio button:hover{border-color:var(--sky2);transform:translateY(-1px)}
-.prio .n{width:24px;height:24px;border-radius:50%;background:var(--tint);color:var(--sky);display:grid;place-items:center;font-weight:700;font-size:12px}
+.prio .n{
+  width:24px;height:24px;border-radius:50%;
+  background:var(--tint);color:var(--sky);
+  display:grid;place-items:center;font-weight:700;font-size:12px;
+}
 .prio span.t{color:var(--muted);display:block;font-size:13px}
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-top:26px}
-.tabs button{background:none;border:0;padding:10px 14px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button{
+  background:none;border:0;padding:10px 14px;
+  color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;
+}
 .tabs button[aria-selected="true"]{color:var(--text);border-color:var(--sky);font-weight:600}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:14px 0 10px}
+.bar-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 10px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .seg button{background:var(--surface);border:0;padding:5px 12px;font-size:12px;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--tint);color:var(--text);font-weight:600}
 .tbl{overflow-x:auto}
@@ -58,13 +132,23 @@ tbody tr:last-child td{border-bottom:0}
 .ritem .t{color:var(--muted);font-size:13px}
 .state{padding:36px 20px;text-align:center;color:var(--muted)}
 .btn{border:1px solid var(--sky);background:var(--sky);color:#fff;border-radius:8px;padding:7px 14px;font-weight:600;margin-top:10px}
-.btn.ghost{background:none;color:var(--sky)}
+.btn.ghost{background:var(--surface);color:var(--sky)}
+.btn.danger{border-color:var(--bad);background:var(--surface);color:var(--bad)}
 .skel{height:44px;border-radius:8px;background:var(--tint);margin:8px 14px;opacity:.7}
 .foot{margin-top:28px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
 /* drawer */
-.scrim{position:fixed;inset:0;background:var(--scrim);opacity:0;visibility:hidden;transition:opacity .18s,visibility 0s .18s;z-index:20}
+.scrim{
+  position:fixed;inset:0;background:var(--scrim);
+  opacity:0;visibility:hidden;transition:opacity .18s,visibility 0s .18s;z-index:20;
+}
 .scrim.open{opacity:1;visibility:visible;transition:opacity .18s}
-.drawer{position:absolute;top:0;right:0;bottom:0;width:min(420px,100%);background:var(--surface);border-left:1px solid var(--line);box-shadow:var(--shadow);transform:translateX(100%);transition:transform .22s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.drawer{
+  position:absolute;top:0;right:0;bottom:0;width:min(440px,100%);
+  background:var(--surface);border-left:1px solid var(--line);box-shadow:var(--shadow);
+  transform:translateX(100%);transition:transform .22s cubic-bezier(.2,.8,.2,1);
+  display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);
+}
 .scrim.open .drawer{transform:none}
 .dh{display:flex;justify-content:space-between;align-items:start;padding:18px 20px 12px;border-bottom:1px solid var(--line)}
 .dh h3{margin:0;font-size:16px}.dh p{margin:2px 0 0;color:var(--muted);font-size:13px}
@@ -74,7 +158,16 @@ tbody tr:last-child td{border-bottom:0}
 .row.total{border-bottom:0;border-top:1px solid var(--text);margin-top:6px;padding-top:12px;font-weight:700;font-size:16px}
 .hint{color:var(--muted);font-size:12px;padding:10px 20px;border-top:1px solid var(--line)}
 .act{background:var(--tint);border-radius:8px;padding:10px 12px;margin:14px 0}
-@media(max-width:720px){.kpis{grid-template-columns:repeat(2,1fr)}.wrap{padding:0 14px}}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.field{display:flex;flex-direction:column;gap:4px;margin-top:10px}
+.field label{font-size:12px;color:var(--muted);font-weight:500}
+.field input,.field select{
+  border:1px solid var(--line);background:var(--surface);border-radius:8px;
+  padding:8px 10px;font-size:13px;
+}
+.d-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.d-actions .btn{margin-top:0}
+@media(max-width:720px){.kpis{grid-template-columns:repeat(2,1fr)}.wrap{padding:0 14px}.grid2{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
 </style>
 </head>
@@ -82,8 +175,15 @@ tbody tr:last-child td{border-bottom:0}
 <div id="app">
 <header>
   <div class="wrap top">
-    <div><h1>Margin Radar</h1><p>Net profit and delivery risk, per order.</p></div>
-    <span class="pill" id="sync">Sample data</span>
+    <div>
+      <h1 id="app-title">Margin Radar</h1>
+      <p id="app-sub">Per-store net profit and delivery risk.</p>
+    </div>
+    <div class="top-actions">
+      <span class="pill" id="sync">Store workspace</span>
+      <button class="btn-top" id="btn-new" type="button">+ Add order</button>
+      <button class="btn-top sec" id="btn-reset" type="button">Reset store</button>
+    </div>
   </div>
   <svg class="waves" viewBox="0 0 1200 46" preserveAspectRatio="none" aria-hidden="true">
     <path d="M0 22c150-22 300 18 450 4s300-24 450-8 225 12 300 4v24H0z" fill="#38BDF8" opacity=".35"/>
@@ -101,14 +201,18 @@ tbody tr:last-child td{border-bottom:0}
   </div>
   <div id="panel" role="tabpanel" style="min-height:260px"></div>
   <div class="foot">
-    <span>Mock data only. No live API calls are made.</span>
+    <span id="store-foot">Local per-store state (no AI calls).</span>
     <label><input type="checkbox" id="fail"> Simulate failed load</label>
   </div>
 </main>
 </div>
+
 <div class="scrim" id="scrim" aria-hidden="true">
   <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dt" id="drawer" tabindex="-1">
-    <div class="dh"><div><h3 id="dt"></h3><p id="ds"></p></div><button class="x" id="close" aria-label="Close details">&times;</button></div>
+    <div class="dh">
+      <div><h3 id="dt"></h3><p id="ds"></p></div>
+      <button class="x" id="close" type="button" aria-label="Close details">&times;</button>
+    </div>
     <div class="db" id="dbody"></div>
     <div class="hint">Click outside or press Esc to close</div>
   </aside>
@@ -116,63 +220,115 @@ tbody tr:last-child td{border-bottom:0}
 
 <script>
 "use strict";
-/* ===== services/mockData.js ===== */
-const MOCK = [
-  {id:"#4821",product:"Posture Corrector Pro",sku:"PC-01",supplier:"Shenzhen Alpha",revenue:39.9,cogs:11.2,shipping:6.4,discount:4,ads:12.5,status:"In transit",daysLate:0,trackingChecks:1,refundRisk:8},
-  {id:"#4822",product:"LED Sunset Lamp",sku:"LS-07",supplier:"Yiwu Bright",revenue:29.0,cogs:9.8,shipping:5.9,discount:0,ads:14.2,status:"Delayed",daysLate:6,trackingChecks:5,refundRisk:46},
-  {id:"#4823",product:"Mini Blender Cup",sku:"MB-12",supplier:"Shenzhen Alpha",revenue:34.5,cogs:13.0,shipping:7.1,discount:3.5,ads:9.0,status:"Delivered",daysLate:0,trackingChecks:0,refundRisk:5},
-  {id:"#4824",product:"Pet Hair Roller",sku:"PH-03",supplier:"Ningbo Pet",revenue:19.9,cogs:7.4,shipping:4.8,discount:2,ads:8.1,status:"Awaiting pickup",daysLate:3,trackingChecks:3,refundRisk:22},
-  {id:"#4825",product:"LED Sunset Lamp",sku:"LS-07",supplier:"Yiwu Bright",revenue:29.0,cogs:9.8,shipping:5.9,discount:5.8,ads:16.0,status:"Delayed",daysLate:9,trackingChecks:8,refundRisk:71},
-  {id:"#4826",product:"Posture Corrector Pro",sku:"PC-01",supplier:"Shenzhen Alpha",revenue:39.9,cogs:11.2,shipping:6.4,discount:0,ads:10.4,status:"Delivered",daysLate:0,trackingChecks:0,refundRisk:4},
-  {id:"#4827",product:"Mini Blender Cup",sku:"MB-12",supplier:"Shenzhen Alpha",revenue:null,cogs:13.0,shipping:7.1,discount:0,ads:null,status:"Processing",daysLate:0,trackingChecks:0,refundRisk:null},
-  {id:"#4828",product:"Cable Organizer Set",sku:"CO-20",supplier:"Ningbo Pet",revenue:14.5,cogs:6.2,shipping:4.2,discount:0,ads:11.0,status:"In transit",daysLate:2,trackingChecks:4,refundRisk:18}
+
+/* ===== store-context.js (isolates data per store) ===== */
+function detectStoreKey() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const rawShop = params.get("shop") || params.get("store") || "";
+    if (rawShop) return rawShop.trim().toLowerCase().replace(/[^a-z0-9.-]/g, "_");
+    if (document.referrer) {
+      const refUrl = new URL(document.referrer);
+      const refShop = refUrl.searchParams.get("shop");
+      if (refShop) return refShop.trim().toLowerCase().replace(/[^a-z0-9.-]/g, "_");
+      if (refUrl.hostname.includes("myshopify.com")) return refUrl.hostname.toLowerCase();
+    }
+    const host = (window.location.hostname || "default-store").toLowerCase();
+    return host.replace(/[^a-z0-9.-]/g, "_");
+  } catch (_) {
+    return "default-store";
+  }
+}
+
+const STORE_KEY = detectStoreKey();
+const STORAGE_KEY = "margin_radar_v1:" + STORE_KEY;
+
+/* ===== services/defaultOrders.js ===== */
+const DEFAULT_ORDERS = [
+  {id:"#1041",product:"Magnetic Car Mount",sku:"MCM-01",supplier:"Guangzhou Tech",revenue:32.0,cogs:8.5,shipping:4.9,discount:0,ads:9.4,status:"In transit",daysLate:0,trackingChecks:1,refundRisk:6},
+  {id:"#1042",product:"Cloud Slippers",sku:"CS-04",supplier:"Jinjiang Footwear",revenue:24.5,cogs:6.8,shipping:4.5,discount:2.5,ads:11.2,status:"Delayed",daysLate:7,trackingChecks:6,refundRisk:48},
+  {id:"#1043",product:"Portable Neck Fan",sku:"PNF-09",supplier:"Shenzhen Cool",revenue:36.0,cogs:10.4,shipping:5.6,discount:3.0,ads:8.2,status:"Delivered",daysLate:0,trackingChecks:1,refundRisk:4},
+  {id:"#1044",product:"Lint Remover Pro",sku:"LRP-02",supplier:"Yiwu Home",revenue:18.9,cogs:5.2,shipping:4.1,discount:0,ads:7.8,status:"Awaiting pickup",daysLate:4,trackingChecks:3,refundRisk:24},
+  {id:"#1045",product:"Cloud Slippers",sku:"CS-04",supplier:"Jinjiang Footwear",revenue:24.5,cogs:6.8,shipping:4.5,discount:4.0,ads:13.1,status:"Delayed",daysLate:9,trackingChecks:8,refundRisk:68},
+  {id:"#1046",product:"Magnetic Car Mount",sku:"MCM-01",supplier:"Guangzhou Tech",revenue:32.0,cogs:8.5,shipping:4.9,discount:0,ads:7.5,status:"Delivered",daysLate:0,trackingChecks:0,refundRisk:3}
 ];
 
 /* ===== lib/num.js ===== */
-const num = (v, d = 0) => { const n = typeof v === "string" ? parseFloat(v) : v; return Number.isFinite(n) ? n : d; };
-const money = v => { const n = num(v); return (n < 0 ? "\u2212" : "") + "$" + Math.abs(n).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2}); };
+const num = (v, d = 0) => {
+  if (v === "" || v === null || v === undefined) return d;
+  const n = typeof v === "string" ? parseFloat(v) : v;
+  return Number.isFinite(n) ? n : d;
+};
+const money = v => {
+  const n = num(v);
+  return (n < 0 ? "\u2212" : "") + "$" + Math.abs(n).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+};
 const pct = v => (Number.isFinite(v) ? v.toFixed(1) : "0.0") + "%";
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+}[c]));
 
-/* ===== domain/profit.js (memoized per order object) ===== */
-const profitCache = new WeakMap();
+/* ===== domain/profit.js ===== */
+let profitCache = new WeakMap();
 function calcProfit(o) {
   if (profitCache.has(o)) return profitCache.get(o);
-  const revenue = num(o.revenue), discount = num(o.discount), cogs = num(o.cogs), shipping = num(o.shipping), ads = num(o.ads);
-  const fees = o.fees != null ? num(o.fees) : revenue > 0 ? revenue * 0.029 + 0.3 : 0;
+  const revenue = Math.max(0, num(o.revenue));
+  const discount = Math.max(0, num(o.discount));
+  const cogs = Math.max(0, num(o.cogs));
+  const shipping = Math.max(0, num(o.shipping));
+  const ads = Math.max(0, num(o.ads));
+  const fees = o.fees != null ? Math.max(0, num(o.fees)) : revenue > 0 ? revenue * 0.029 + 0.3 : 0;
   const net = revenue - discount - cogs - shipping - fees - ads;
   const margin = revenue > 0 ? (net / revenue) * 100 : 0;
-  const r = {revenue, discount, cogs, shipping, fees, ads, net, margin, incomplete: o.revenue == null || o.ads == null};
+  const incomplete = o.revenue === "" || o.revenue == null || o.ads === "" || o.ads == null;
+  const r = {revenue, discount, cogs, shipping, fees, ads, net, margin, incomplete};
   profitCache.set(o, r);
   return r;
 }
 function totals(list) {
-  const t = list.reduce((a, o) => { const p = calcProfit(o); a.rev += p.revenue; a.net += p.net; return a; }, {rev: 0, net: 0});
+  const t = list.reduce((a, o) => {
+    const p = calcProfit(o);
+    a.rev += p.revenue;
+    a.net += p.net;
+    return a;
+  }, {rev: 0, net: 0});
   return {...t, margin: t.rev > 0 ? (t.net / t.rev) * 100 : 0};
 }
 function byProduct(list) {
   const m = new Map();
   list.forEach(o => {
-    const p = calcProfit(o), k = o.sku || o.product;
-    const e = m.get(k) || {id: k, product: o.product, count: 0, revenue: 0, net: 0};
-    e.count++; e.revenue += p.revenue; e.net += p.net; m.set(k, e);
+    const p = calcProfit(o);
+    const k = (o.sku || o.product || "SKU").trim();
+    const e = m.get(k) || {id: k, product: o.product || "Unnamed SKU", count: 0, revenue: 0, net: 0};
+    e.count++;
+    e.revenue += p.revenue;
+    e.net += p.net;
+    m.set(k, e);
   });
-  return [...m.values()].map(e => ({...e, margin: e.revenue > 0 ? e.net / e.revenue * 100 : 0})).sort((a, b) => a.net - b.net);
+  return [...m.values()]
+    .map(e => ({...e, margin: e.revenue > 0 ? (e.net / e.revenue) * 100 : 0}))
+    .sort((a, b) => a.net - b.net);
 }
 
 /* ===== domain/risk.js ===== */
-const riskCache = new WeakMap();
+let riskCache = new WeakMap();
 function calcRisk(o) {
   if (riskCache.has(o)) return riskCache.get(o);
-  const late = Math.max(0, num(o.daysLate)), checks = Math.max(0, num(o.trackingChecks)), refund = Math.min(100, Math.max(0, num(o.refundRisk)));
-  const parts = [{k: "delay", v: Math.min(50, late * 6)}, {k: "tracking", v: Math.min(20, Math.max(0, checks - 2) * 5)}, {k: "refund", v: refund * 0.4}];
+  const late = Math.max(0, num(o.daysLate));
+  const checks = Math.max(0, num(o.trackingChecks));
+  const refund = Math.min(100, Math.max(0, num(o.refundRisk)));
+  const parts = [
+    {k: "delay", v: Math.min(50, late * 6)},
+    {k: "tracking", v: Math.min(20, Math.max(0, checks - 2) * 5)},
+    {k: "refund", v: refund * 0.4}
+  ];
   const score = Math.round(Math.min(100, parts.reduce((s, p) => s + p.v, 0)));
-  const top = parts.sort((a, b) => b.v - a.v)[0].k;
+  const top = parts.slice().sort((a, b) => b.v - a.v)[0].k;
   const level = score >= 55 ? "high" : score >= 25 ? "med" : "low";
   const actions = {
-    delay: `Package is ${late} days late. Message the customer today and ask ${esc(o.supplier || "the supplier")} for a new tracking update.`,
-    tracking: `Customer checked tracking ${checks} times. Send a proactive shipping update before they open a ticket.`,
-    refund: `Refund risk is ${refund}%. Offer a partial refund or reship before a chargeback is filed.`
+    delay: `Package is ${late} days late. Message the buyer and request a carrier scan from ${esc(o.supplier || "your supplier")}.`,
+    tracking: `Tracking checked ${checks} times. Send a proactive status update before a dispute opens.`,
+    refund: `Refund risk is ${refund}%. Offer a targeted resolution or reship before chargeback escalation.`
   };
   const r = {score, level, action: level === "low" ? "No action needed." : actions[top], late, checks, refund};
   riskCache.set(o, r);
@@ -180,139 +336,438 @@ function calcRisk(o) {
 }
 const LABEL = {high: "High", med: "Medium", low: "Low"};
 const badge = l => `<span class="badge b-${l}">${LABEL[l]}</span>`;
+
 function priorities(list) {
   const items = [];
   list.forEach(o => {
     const r = calcRisk(o), p = calcProfit(o);
-    if (r.level === "high") items.push({w: 100 + r.score, o, title: `${o.id} ${o.product}: ${r.late} days late`, text: r.action});
-    else if (p.net < 0 && !p.incomplete) items.push({w: 60 + Math.abs(p.net), o, title: `${o.id} lost ${money(Math.abs(p.net))}`, text: "Ad and shipping cost exceed what this order earned. Review ad spend on this SKU."});
-    else if (p.incomplete) items.push({w: 20, o, title: `${o.id} is missing cost data`, text: "Add revenue and ad spend so profit is accurate."});
+    if (r.level === "high") {
+      items.push({w: 100 + r.score, o, title: `${o.id} ${o.product}: ${r.late}d delay`, text: r.action});
+    } else if (p.net < 0 && !p.incomplete) {
+      items.push({w: 60 + Math.abs(p.net), o, title: `${o.id} net loss ${money(Math.abs(p.net))}`, text: "Ad, shipping, and COGS exceed revenue on this order. Adjust ad spend or pricing."});
+    } else if (p.incomplete) {
+      items.push({w: 20, o, title: `${o.id} missing cost fields`, text: "Set revenue and ad spend to calculate exact profit."});
+    }
   });
   return items.sort((a, b) => b.w - a.w).slice(0, 3);
 }
 
 /* ===== store.js ===== */
-const state = {orders: [], status: "loading", tab: "profit", view: "orders", openId: null, loadToken: 0, lastFocus: null};
+const state = {
+  orders: [],
+  status: "loading",
+  tab: "profit",
+  view: "orders",
+  modalMode: null, // null | "view" | "edit" | "create"
+  openId: null,
+  loadToken: 0,
+  lastFocus: null
+};
 const $ = id => document.getElementById(id);
 
-function loadOrders() {
-  const token = ++state.loadToken;           // ignores stale responses on rapid retries
-  state.status = "loading"; render();
+function resetCaches() {
+  profitCache = new WeakMap();
+  riskCache = new WeakMap();
+}
+
+function readStoredOrders() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return JSON.parse(JSON.stringify(DEFAULT_ORDERS));
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : JSON.parse(JSON.stringify(DEFAULT_ORDERS));
+  } catch (_) {
+    return JSON.parse(JSON.stringify(DEFAULT_ORDERS));
+  }
+}
+
+function saveOrders(list) {
+  state.orders = list;
+  resetCaches();
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  } catch (_) {}
+}
+
+function loadOrders(forceDefault = false) {
+  const token = ++state.loadToken;
+  state.status = "loading";
+  render();
   setTimeout(() => {
     if (token !== state.loadToken) return;
     try {
       if ($("fail").checked) throw new Error("Simulated");
-      const data = JSON.parse(JSON.stringify(MOCK));
-      state.orders = Array.isArray(data) ? data.filter(o => o && o.id) : [];
+      if (forceDefault) {
+        try { window.localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+      }
+      const data = readStoredOrders();
+      resetCaches();
+      state.orders = data.filter(o => o && o.id);
       state.status = state.orders.length ? "ready" : "empty";
-    } catch (e) { state.status = "error"; }
+    } catch (_) {
+      state.status = "error";
+    }
     render();
-  }, 450);
+  }, 220);
 }
 
 /* ===== ui/render.js ===== */
+function renderHeaderMeta() {
+  $("app-sub").textContent = `Store: ${STORE_KEY} · Net profit and delivery risk per order.`;
+  $("store-foot").textContent = `Per-store local state (${STORE_KEY}) · Zero AI token usage.`;
+}
+
 function renderKpis() {
   const el = $("kpis");
   if (state.status !== "ready") { el.innerHTML = ""; return; }
-  const t = totals(state.orders), risky = state.orders.filter(o => calcRisk(o).level !== "low").length;
+  const t = totals(state.orders);
+  const risky = state.orders.filter(o => calcRisk(o).level !== "low").length;
   const cls = t.net < 0 ? "neg" : "pos";
   el.innerHTML = `
-    <div class="card kpi"><small>Gross revenue</small><b class="num">${money(t.rev)}</b><i>Before any costs</i></div>
+    <div class="card kpi"><small>Gross revenue</small><b class="num">${money(t.rev)}</b><i>Before costs</i></div>
     <div class="card kpi net"><small>True net profit</small><b class="num ${cls}">${money(t.net)}</b><i>After COGS, shipping, fees, discounts, ads</i></div>
-    <div class="card kpi"><small>Net margin</small><b class="num ${cls}">${pct(t.margin)}</b><i>Net profit / gross revenue</i></div>
+    <div class="card kpi"><small>Net margin</small><b class="num ${cls}">${pct(t.margin)}</b><i>True net profit / gross revenue</i></div>
     <div class="card kpi"><small>Orders at risk</small><b class="num">${risky} of ${state.orders.length}</b><i>Medium or high risk</i></div>`;
 }
+
 function renderPrio() {
   const el = $("prio");
-  if (state.status !== "ready") { el.innerHTML = `<div class="card state">${state.status === "loading" ? "Checking orders\u2026" : "Nothing to show yet."}</div>`; return; }
+  if (state.status !== "ready") {
+    el.innerHTML = `<div class="card state">${state.status === "loading" ? "Loading store data\u2026" : "No store data available."}</div>`;
+    return;
+  }
   const items = priorities(state.orders);
-  el.innerHTML = items.length ? items.map((p, i) => `<button data-open="${esc(p.o.id)}"><span class="n">${i + 1}</span><span><b>${esc(p.title)}</b><span class="t">${p.text}</span></span><span aria-hidden="true">&rsaquo;</span></button>`).join("")
-    : `<div class="card state">All clear. No orders need attention right now.</div>`;
+  el.innerHTML = items.length
+    ? items.map((p, i) => `
+      <button type="button" data-open="${esc(p.o.id)}" data-kind="order">
+        <span class="n">${i + 1}</span>
+        <span><b>${esc(p.title)}</b><span class="t">${p.text}</span></span>
+        <span aria-hidden="true">&rsaquo;</span>
+      </button>`).join("")
+    : `<div class="card state">No high-priority alerts right now.</div>`;
 }
+
 function renderPanel() {
   const el = $("panel");
-  if (state.status === "loading") { el.innerHTML = `<div class="card" style="margin-top:14px">${'<div class="skel"></div>'.repeat(4)}</div>`; return; }
-  if (state.status === "error") { el.innerHTML = `<div class="card state" style="margin-top:14px"><b>Couldn\u2019t load orders.</b><br>Check your connection and try again.<br><button class="btn" data-retry>Retry</button></div>`; return; }
-  if (state.status === "empty") { el.innerHTML = `<div class="card state" style="margin-top:14px"><b>No orders yet.</b><br>New Shopify orders will appear here once they sync.<br><button class="btn ghost" data-retry>Refresh</button></div>`; return; }
+  if (state.status === "loading") {
+    el.innerHTML = `<div class="card" style="margin-top:14px">${'<div class="skel"></div>'.repeat(4)}</div>`;
+    return;
+  }
+  if (state.status === "error") {
+    el.innerHTML = `<div class="card state" style="margin-top:14px"><b>Couldn\u2019t load store metrics.</b><br>Retry or uncheck simulated failure.<br><button class="btn" type="button" data-retry>Retry</button></div>`;
+    return;
+  }
+  if (state.status === "empty") {
+    el.innerHTML = `<div class="card state" style="margin-top:14px"><b>No orders in this store yet.</b><br>Add an order or reset sample data.<br><button class="btn" type="button" data-create>+ Add order</button> <button class="btn ghost" type="button" data-retry>Restore defaults</button></div>`;
+    return;
+  }
   if (state.tab === "radar") {
     const list = state.orders.map(o => ({o, r: calcRisk(o)})).sort((a, b) => b.r.score - a.r.score);
-    el.innerHTML = `<div class="radar" style="margin-top:14px">${list.map(({o, r}) => `<button class="card ritem" data-open="${esc(o.id)}">${badge(r.level)}<span><b>${esc(o.id)} &middot; ${esc(o.product)}</b><span class="t" style="display:block">${r.level === "low" ? "On track." : r.action}</span></span><span class="num t">${r.score}/100</span></button>`).join("")}</div>`;
+    el.innerHTML = `<div class="radar" style="margin-top:14px">${list.map(({o, r}) => `
+      <button class="card ritem" type="button" data-open="${esc(o.id)}" data-kind="order">
+        ${badge(r.level)}
+        <span><b>${esc(o.id)} &middot; ${esc(o.product)}</b><span class="t" style="display:block">${r.level === "low" ? "On track." : r.action}</span></span>
+        <span class="num t">${r.score}/100</span>
+      </button>`).join("")}</div>`;
     return;
   }
   const prod = state.view === "products";
-  const rows = prod ? byProduct(state.orders).map(e => `<tr tabindex="0" data-open="${esc(e.id)}" data-kind="product"><td>${esc(e.product)}</td><td class="num">${e.count}</td><td class="num">${money(e.revenue)}</td><td class="num ${e.net < 0 ? "neg" : "pos"}">${money(e.net)}</td><td class="num">${pct(e.margin)}</td></tr>`).join("")
-    : state.orders.map(o => { const p = calcProfit(o), r = calcRisk(o); return `<tr tabindex="0" data-open="${esc(o.id)}"><td>${esc(o.id)} &middot; ${esc(o.product)}</td><td class="num">${money(p.revenue)}</td><td class="num ${p.net < 0 ? "neg" : "pos"}">${money(p.net)}</td><td class="num">${pct(p.margin)}</td><td>${badge(r.level)}</td></tr>`; }).join("");
-  const head = prod ? "<th>Product</th><th>Orders</th><th>Revenue</th><th>Net profit</th><th>Margin</th>" : "<th>Order</th><th>Revenue</th><th>Net profit</th><th>Margin</th><th>Risk</th>";
-  el.innerHTML = `<div class="seg" role="group" aria-label="Group by"><button data-view="orders" aria-pressed="${!prod}">Orders</button><button data-view="products" aria-pressed="${prod}">Products</button></div>
+  const rows = prod
+    ? byProduct(state.orders).map(e => `
+      <tr tabindex="0" data-open="${esc(e.id)}" data-kind="product">
+        <td>${esc(e.product)}</td>
+        <td class="num">${e.count}</td>
+        <td class="num">${money(e.revenue)}</td>
+        <td class="num ${e.net < 0 ? "neg" : "pos"}">${money(e.net)}</td>
+        <td class="num">${pct(e.margin)}</td>
+      </tr>`).join("")
+    : state.orders.map(o => {
+      const p = calcProfit(o), r = calcRisk(o);
+      return `
+      <tr tabindex="0" data-open="${esc(o.id)}" data-kind="order">
+        <td>${esc(o.id)} &middot; ${esc(o.product)}</td>
+        <td class="num">${money(p.revenue)}</td>
+        <td class="num ${p.net < 0 ? "neg" : "pos"}">${money(p.net)}</td>
+        <td class="num">${pct(p.margin)}</td>
+        <td>${badge(r.level)}</td>
+      </tr>`;
+    }).join("");
+  const head = prod
+    ? "<th>Product</th><th>Orders</th><th>Revenue</th><th>Net profit</th><th>Margin</th>"
+    : "<th>Order</th><th>Revenue</th><th>Net profit</th><th>Margin</th><th>Risk</th>";
+  el.innerHTML = `
+    <div class="bar-row">
+      <div class="seg" role="group" aria-label="Group by">
+        <button type="button" data-view="orders" aria-pressed="${!prod}">Orders</button>
+        <button type="button" data-view="products" aria-pressed="${prod}">Products</button>
+      </div>
+    </div>
     <div class="card tbl"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
+
 function render() {
-  $("sync").textContent = state.status === "error" ? "Offline" : "Sample data";
-  renderKpis(); renderPrio(); renderPanel();
-  document.querySelectorAll("#tabs [data-tab]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === state.tab)));
+  renderHeaderMeta();
+  $("sync").textContent = state.status === "error" ? "Load error" : "Store data";
+  renderKpis();
+  renderPrio();
+  renderPanel();
+  document.querySelectorAll("#tabs [data-tab]").forEach(b => {
+    b.setAttribute("aria-selected", String(b.dataset.tab === state.tab));
+  });
 }
 
 /* ===== ui/drawer.js ===== */
-function drawerHtml(o) {
+function drawerViewHtml(o) {
   const p = calcProfit(o), r = calcRisk(o);
   const line = (l, v, neg) => `<div class="row"><span>${l}</span><span class="num">${neg ? "\u2212" : ""}${money(v)}</span></div>`;
-  return `<div class="row"><span>${badge(r.level)}</span><span class="num">Risk ${r.score}/100</span></div>
+  return `
+    <div class="row"><span>${badge(r.level)}</span><span class="num">Risk ${r.score}/100</span></div>
     <div class="act"><b>Next action</b><br>${r.action}</div>
-    ${line("Gross revenue", p.revenue)}${line("Discounts", p.discount, 1)}${line("Product cost (COGS)", p.cogs, 1)}${line("Shipping", p.shipping, 1)}${line("Payment fees (est.)", p.fees, 1)}${line("Ads and other", p.ads, 1)}
+    ${line("Gross revenue", p.revenue)}
+    ${line("Discounts", p.discount, 1)}
+    ${line("Product cost (COGS)", p.cogs, 1)}
+    ${line("Shipping", p.shipping, 1)}
+    ${line("Payment fees (est.)", p.fees, 1)}
+    ${line("Ads and other", p.ads, 1)}
     <div class="row total"><span>True net profit</span><span class="num ${p.net < 0 ? "neg" : "pos"}">${money(p.net)}</span></div>
     <div class="row"><span>Margin</span><span class="num">${pct(p.margin)}</span></div>
-    ${p.incomplete ? `<p class="t" style="color:var(--warn)">Some values are missing and counted as $0.00.</p>` : ""}
-    <div class="row"><span>Status</span><span>${esc(o.status)}</span></div><div class="row"><span>Tracking checks</span><span class="num">${r.checks}</span></div>`;
+    <div class="row"><span>Status</span><span>${esc(o.status || "In transit")}</span></div>
+    <div class="row"><span>Days late / Tracking checks</span><span class="num">${r.late}d / ${r.checks}</span></div>
+    <div class="d-actions">
+      <button class="btn" type="button" data-edit="${esc(o.id)}">Edit metrics</button>
+      <button class="btn danger" type="button" data-delete="${esc(o.id)}">Delete</button>
+    </div>`;
 }
-function openDrawer(id, kind) {
-  let title, sub, body;
-  if (kind === "product") {
-    const e = byProduct(state.orders).find(x => x.id === id); if (!e) return;
-    title = e.product; sub = `${e.count} orders`;
-    body = `<div class="row"><span>Gross revenue</span><span class="num">${money(e.revenue)}</span></div><div class="row total"><span>True net profit</span><span class="num ${e.net < 0 ? "neg" : "pos"}">${money(e.net)}</span></div><div class="row"><span>Margin</span><span class="num">${pct(e.margin)}</span></div>`;
+
+function drawerFormHtml(o) {
+  const isNew = !o;
+  const item = o || {
+    id: "#" + Math.floor(1100 + Math.random() * 8800),
+    product: "",
+    sku: "",
+    supplier: "",
+    revenue: 30,
+    cogs: 8,
+    shipping: 5,
+    discount: 0,
+    ads: 8,
+    status: "In transit",
+    daysLate: 0,
+    trackingChecks: 1,
+    refundRisk: 10
+  };
+  return `
+    <form id="order-form">
+      <div class="grid2">
+        <div class="field">
+          <label for="f-id">Order ID</label>
+          <input id="f-id" name="id" value="${esc(item.id)}" required>
+        </div>
+        <div class="field">
+          <label for="f-sku">SKU</label>
+          <input id="f-sku" name="sku" value="${esc(item.sku)}" placeholder="e.g. SKU-01">
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-product">Product name</label>
+        <input id="f-product" name="product" value="${esc(item.product)}" placeholder="e.g. Posture Strap" required>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="f-supplier">Supplier</label>
+          <input id="f-supplier" name="supplier" value="${esc(item.supplier)}" placeholder="e.g. CJ / Supplier">
+        </div>
+        <div class="field">
+          <label for="f-status">Fulfillment status</label>
+          <select id="f-status" name="status">
+            ${["In transit","Delayed","Delivered","Awaiting pickup","Processing"].map(st =>
+              `<option value="${st}" ${item.status === st ? "selected" : ""}>${st}</option>`
+            ).join("")}
+          </select>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="f-rev">Revenue ($)</label>
+          <input id="f-rev" name="revenue" type="number" step="0.01" min="0" value="${num(item.revenue)}">
+        </div>
+        <div class="field">
+          <label for="f-cogs">COGS ($)</label>
+          <input id="f-cogs" name="cogs" type="number" step="0.01" min="0" value="${num(item.cogs)}">
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="f-ship">Shipping cost ($)</label>
+          <input id="f-ship" name="shipping" type="number" step="0.01" min="0" value="${num(item.shipping)}">
+        </div>
+        <div class="field">
+          <label for="f-ads">Ad spend ($)</label>
+          <input id="f-ads" name="ads" type="number" step="0.01" min="0" value="${num(item.ads)}">
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="f-disc">Discount ($)</label>
+          <input id="f-disc" name="discount" type="number" step="0.01" min="0" value="${num(item.discount)}">
+        </div>
+        <div class="field">
+          <label for="f-late">Days late</label>
+          <input id="f-late" name="daysLate" type="number" step="1" min="0" value="${Math.max(0, Math.round(num(item.daysLate)))}">
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="f-checks">Tracking checks</label>
+          <input id="f-checks" name="trackingChecks" type="number" step="1" min="0" value="${Math.max(0, Math.round(num(item.trackingChecks)))}">
+        </div>
+        <div class="field">
+          <label for="f-refund">Refund risk (%)</label>
+          <input id="f-refund" name="refundRisk" type="number" step="1" min="0" max="100" value="${Math.min(100, Math.max(0, Math.round(num(item.refundRisk))))}">
+        </div>
+      </div>
+      <div class="d-actions">
+        <button class="btn" type="submit">${isNew ? "Save order" : "Update order"}</button>
+        <button class="btn ghost" type="button" id="cancel-form">Cancel</button>
+      </div>
+    </form>`;
+}
+
+function openDrawer({mode, id = null, kind = "order"}) {
+  let title = "", sub = "", body = "";
+  if (mode === "create") {
+    title = "Add store order";
+    sub = `Store: ${STORE_KEY}`;
+    body = drawerFormHtml(null);
+  } else if (mode === "edit") {
+    const o = state.orders.find(x => x.id === id);
+    if (!o) return;
+    title = `Edit ${o.id}`;
+    sub = o.product;
+    body = drawerFormHtml(o);
+  } else if (kind === "product") {
+    const e = byProduct(state.orders).find(x => x.id === id);
+    if (!e) return;
+    title = e.product;
+    sub = `${e.count} orders · SKU ${e.id}`;
+    body = `
+      <div class="row"><span>Gross revenue</span><span class="num">${money(e.revenue)}</span></div>
+      <div class="row total"><span>True net profit</span><span class="num ${e.net < 0 ? "neg" : "pos"}">${money(e.net)}</span></div>
+      <div class="row"><span>Margin</span><span class="num">${pct(e.margin)}</span></div>`;
   } else {
-    const o = state.orders.find(x => x.id === id); if (!o) return;
-    title = `${o.id} \u00b7 ${o.product}`; sub = `Supplier: ${o.supplier || "Unknown"}`; body = drawerHtml(o);
+    const o = state.orders.find(x => x.id === id);
+    if (!o) return;
+    title = `${o.id} \u00b7 ${o.product}`;
+    sub = `Supplier: ${o.supplier || "Unknown"}`;
+    body = drawerViewHtml(o);
   }
-  if (state.openId === null) state.lastFocus = document.activeElement;
+
+  if (state.modalMode === null) state.lastFocus = document.activeElement;
+  state.modalMode = mode;
   state.openId = id;
-  $("dt").textContent = title; $("ds").textContent = sub; $("dbody").innerHTML = body;
-  $("scrim").classList.add("open"); $("scrim").setAttribute("aria-hidden", "false");
+  $("dt").textContent = title;
+  $("ds").textContent = sub;
+  $("dbody").innerHTML = body;
+  $("scrim").classList.add("open");
+  $("scrim").setAttribute("aria-hidden", "false");
   $("main").setAttribute("inert", "");
   $("close").focus({preventScroll: true});
 }
+
 function closeDrawer() {
-  if (state.openId === null) return;
+  if (state.modalMode === null) return;
+  state.modalMode = null;
   state.openId = null;
-  $("scrim").classList.remove("open"); $("scrim").setAttribute("aria-hidden", "true");
+  $("scrim").classList.remove("open");
+  $("scrim").setAttribute("aria-hidden", "true");
   $("main").removeAttribute("inert");
-  const f = state.lastFocus; state.lastFocus = null;
+  const f = state.lastFocus;
+  state.lastFocus = null;
   if (f && document.contains(f)) f.focus({preventScroll: true});
 }
 
-/* ===== main.js (listeners bound once, delegated) ===== */
+/* ===== main.js ===== */
 document.addEventListener("click", e => {
   const t = e.target;
-  if (t === $("scrim")) return closeDrawer();            // backdrop-only target: clicks inside drawer never reach here
-  if (t.closest("#close")) return closeDrawer();
-  const open = t.closest("[data-open]"); if (open) return openDrawer(open.dataset.open, open.dataset.kind);
-  const tab = t.closest("[data-tab]"); if (tab) { state.tab = tab.dataset.tab; return render(); }
-  const view = t.closest("[data-view]"); if (view) { state.view = view.dataset.view; return render(); }
-  if (t.closest("[data-retry]")) return loadOrders();
+  if (t === $("scrim")) return closeDrawer();
+  if (t.closest("#close") || t.closest("#cancel-form")) return closeDrawer();
+  if (t.closest("#btn-new") || t.closest("[data-create]")) return openDrawer({mode: "create"});
+  if (t.closest("#btn-reset")) return loadOrders(true);
+
+  const editBtn = t.closest("[data-edit]");
+  if (editBtn) return openDrawer({mode: "edit", id: editBtn.dataset.edit});
+
+  const delBtn = t.closest("[data-delete]");
+  if (delBtn) {
+    const targetId = delBtn.dataset.delete;
+    const next = state.orders.filter(x => x.id !== targetId);
+    saveOrders(next);
+    state.status = next.length ? "ready" : "empty";
+    closeDrawer();
+    return render();
+  }
+
+  const open = t.closest("[data-open]");
+  if (open) return openDrawer({mode: "view", id: open.dataset.open, kind: open.dataset.kind || "order"});
+
+  const tab = t.closest("[data-tab]");
+  if (tab) { state.tab = tab.dataset.tab; return render(); }
+
+  const view = t.closest("[data-view]");
+  if (view) { state.view = view.dataset.view; return render(); }
+
+  if (t.closest("[data-retry]")) return loadOrders(false);
 });
+
+document.addEventListener("submit", e => {
+  if (!e.target || e.target.id !== "order-form") return;
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const entry = {
+    id: String(fd.get("id") || "").trim() || ("#" + Math.floor(1100 + Math.random() * 8800)),
+    product: String(fd.get("product") || "").trim() || "Store Product",
+    sku: String(fd.get("sku") || "").trim() || "SKU-CUSTOM",
+    supplier: String(fd.get("supplier") || "").trim() || "Direct Supplier",
+    status: String(fd.get("status") || "In transit"),
+    revenue: Math.max(0, num(fd.get("revenue"))),
+    cogs: Math.max(0, num(fd.get("cogs"))),
+    shipping: Math.max(0, num(fd.get("shipping"))),
+    ads: Math.max(0, num(fd.get("ads"))),
+    discount: Math.max(0, num(fd.get("discount"))),
+    daysLate: Math.max(0, Math.round(num(fd.get("daysLate")))),
+    trackingChecks: Math.max(0, Math.round(num(fd.get("trackingChecks")))),
+    refundRisk: Math.min(100, Math.max(0, Math.round(num(fd.get("refundRisk")))))
+  };
+
+  let next;
+  if (state.modalMode === "edit" && state.openId) {
+    next = state.orders.map(o => o.id === state.openId ? entry : o);
+  } else {
+    next = [entry, ...state.orders];
+  }
+  saveOrders(next);
+  state.status = next.length ? "ready" : "empty";
+  closeDrawer();
+  render();
+});
+
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") return closeDrawer();
-  if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches("tr[data-open]")) { e.preventDefault(); openDrawer(e.target.dataset.open, e.target.dataset.kind); }
-  if (e.key === "Tab" && state.openId !== null) {         // keep focus inside the drawer
-    const f = [...$("drawer").querySelectorAll("button,[tabindex='0']")];
+  if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches("tr[data-open]")) {
+    e.preventDefault();
+    openDrawer({mode: "view", id: e.target.dataset.open, kind: e.target.dataset.kind || "order"});
+  }
+  if (e.key === "Tab" && state.modalMode !== null) {
+    const f = [...$("drawer").querySelectorAll("button,input,select,[tabindex='0']")].filter(el => !el.disabled);
     if (!f.length) return;
     const first = f[0], last = f[f.length - 1];
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   }
 });
-$("fail").addEventListener("change", loadOrders);
-loadOrders();
+
+$("fail").addEventListener("change", () => loadOrders(false));
+loadOrders(false);
 </script>
 </body>
 </html>
