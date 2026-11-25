@@ -1,76 +1,68 @@
-"use strict";
+export default async function handler(req, res) {
+  const { code, shop: rawShop } = req.query || {};
+  const shop = String(rawShop || "").trim().toLowerCase();
 
-function normalizeShop(raw) {
-  const s = String(raw || "").trim().toLowerCase().replace(/^https?:\/\//, "").split("/")[0];
-  return /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(s) ? s : "";
-}
-
-async function saveStoreToken(shop, accessToken) {
-  const sbUrl = String(process.env.SUPABASE_URL || "").trim().replace(/\/+$/, "");
-  const sbKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
-  if (sbUrl && sbKey) {
-    const r = await fetch(`${sbUrl}/rest/v1/shopify_stores?on_conflict=shop`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: sbKey,
-        Authorization: `Bearer ${sbKey}`,
-        Prefer: "resolution=merge-duplicates,return=minimal"
-      },
-      body: JSON.stringify([{ shop, access_token: accessToken, updated_at: new Date().toISOString() }])
-    });
-    if (!r.ok) throw new Error(`Supabase save failed: ${r.status}`);
-    return true;
+  if (!code || !shop || !shop.endsWith(".myshopify.com")) {
+    return res.status(400).send("Missing code or invalid shop parameter");
   }
 
-  const hook = String(process.env.N8N_TOKEN_SAVE_URL || "").trim();
-  if (hook) {
-    const r = await fetch(hook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ shop, access_token: accessToken })
-    });
-    if (!r.ok) throw new Error(`Webhook save failed: ${r.status}`);
-    return true;
+  const clientId = process.env.SHOPIFY_CLIENT_ID;
+  const clientSecret = process.env.SHOPIFY_CLIENT_SECRET;
+  const supabaseUrl = (process.env.SUPABASE_URL || "").trim().replace(/\/+$/, "");
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const appUrl = (process.env.APP_URL || "https://radar-margin.vercel.app")
+    .trim()
+    .replace(/\/+$/, "");
+
+  if (!clientId || !clientSecret) {
+    return res.status(500).send("Missing SHOPIFY_CLIENT_ID or SHOPIFY_CLIENT_SECRET");
   }
 
-  return false;
-}
-
-module.exports = async function handler(req, res) {
-  const shop = normalizeShop(req.query?.shop);
-  const code = String(req.query?.code || "").trim();
-  const clientId = String(process.env.SHOPIFY_CLIENT_ID || "").trim();
-  const clientSecret = String(process.env.SHOPIFY_CLIENT_SECRET || "").trim();
-  const appUrl = String(process.env.APP_URL || "https://radar-margin.vercel.app").trim().replace(/\/+$/, "");
-
-  if (!shop || !code || !clientId || !clientSecret) {
-    return res.status(400).send("Invalid OAuth callback parameters or missing app credentials.");
+  if (!supabaseUrl || !serviceRoleKey) {
+    return res.status(500).send("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
   }
 
   try {
     const tokenRes = await fetch(`https://${shop}/admin/oauth/access_token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code })
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code
+      })
     });
 
-    if (!tokenRes.ok) {
-      return res.status(502).send(`Token exchange failed (${tokenRes.status}).`);
+    const tokenData = await tokenRes.json();
+    if (!tokenRes.ok || !tokenData.access_token) {
+      return res.status(502).send(`Token exchange failed: ${JSON.stringify(tokenData)}`);
     }
 
-    const tokenJson = await tokenRes.json();
-    const accessToken = String(tokenJson?.access_token || "").trim();
-    if (!accessToken) {
-      return res.status(502).send("No access_token returned by Shopify.");
+    const dbRes = await fetch(`${supabaseUrl}/rest/v1/shopify_stores?on_conflict=shop`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        Prefer: "resolution=merge-duplicates,return=minimal"
+      },
+      body: JSON.stringify([
+        {
+          shop,
+          access_token: tokenData.access_token,
+          scope: tokenData.scope || ""
+        }
+      ])
+    });
+
+    if (!dbRes.ok) {
+      const dbErr = await dbRes.text();
+      return res.status(502).send(`Supabase save failed: ${dbErr}`);
     }
 
-    await saveStoreToken(shop, accessToken);
-
-    const embeddedUrl = `https://${shop}/admin/apps/${encodeURIComponent(clientId)}`;
-    res.writeHead(302, { Location: embeddedUrl || `${appUrl}/?shop=${encodeURIComponent(shop)}` });
-    res.end();
+    const redirectTarget = `${appUrl}/?shop=${encodeURIComponent(shop)}`;
+    return res.redirect(302, redirectTarget);
   } catch (err) {
-    return res.status(500).send(err?.message || "OAuth error");
+    return res.status(500).send(`Callback error: ${err?.message || "Unknown error"}`);
   }
-};
+}
