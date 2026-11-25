@@ -138,7 +138,6 @@ tbody tr:last-child td{border-bottom:0}
 .skel{height:44px;border-radius:8px;background:var(--tint);margin:8px 14px;opacity:.7}
 .foot{margin-top:28px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 
-/* drawer */
 .scrim{
   position:fixed;inset:0;background:var(--scrim);
   opacity:0;visibility:hidden;transition:opacity .18s,visibility 0s .18s;z-index:20;
@@ -178,12 +177,12 @@ tbody tr:last-child td{border-bottom:0}
   <div class="wrap top">
     <div>
       <h1 id="app-title">Margin Radar</h1>
-      <p id="app-sub">Per-store net profit and delivery risk.</p>
+      <p id="app-sub">Live per-store net profit, products, and delivery risk.</p>
     </div>
     <div class="top-actions">
-      <span class="pill" id="sync">Store data</span>
-      <button class="btn-top" id="btn-new" type="button">+ Add order</button>
-      <button class="btn-top sec" id="btn-reset" type="button">Reset store</button>
+      <span class="pill" id="sync">Checking store…</span>
+      <button class="btn-top" id="btn-connect" type="button">Connect store</button>
+      <button class="btn-top sec" id="btn-refresh" type="button">Sync now</button>
     </div>
   </div>
   <svg class="waves" viewBox="0 0 1200 46" preserveAspectRatio="none" aria-hidden="true">
@@ -202,7 +201,7 @@ tbody tr:last-child td{border-bottom:0}
   </div>
   <div id="panel" role="tabpanel" style="min-height:260px"></div>
   <div class="foot">
-    <span id="store-foot">Per-store state · Zero AI token usage.</span>
+    <span id="store-foot">Multi-store OAuth via Supabase · Live Shopify data.</span>
     <label><input type="checkbox" id="fail"> Simulate failed load</label>
   </div>
 </main>
@@ -222,41 +221,52 @@ tbody tr:last-child td{border-bottom:0}
 <script>
 "use strict";
 
-/* ===== store-context.js ===== */
-function detectStoreKey() {
+function normalizeShop(raw) {
+  if (!raw) return "";
+  let s = String(raw).trim().toLowerCase();
+  s = s.replace(/^https?:\/\//, "").split("/")[0];
+  if (!s) return "";
+  if (s.endsWith(".myshopify.com")) return s;
+  if (/^[a-z0-9-]+$/.test(s)) return `${s}.myshopify.com`;
+  return "";
+}
+
+function detectShopDomain() {
   try {
     const params = new URLSearchParams(window.location.search);
-    const rawShop = params.get("shop") || params.get("store") || "";
-    if (rawShop) return rawShop.trim().toLowerCase().replace(/[^a-z0-9.-]/g, "_");
+    const fromQuery = normalizeShop(params.get("shop") || params.get("store") || "");
+    if (fromQuery) {
+      window.sessionStorage.setItem("margin_radar_shop", fromQuery);
+      return fromQuery;
+    }
+
     if (document.referrer) {
       const refUrl = new URL(document.referrer);
-      const refShop = refUrl.searchParams.get("shop");
-      if (refShop) return refShop.trim().toLowerCase().replace(/[^a-z0-9.-]/g, "_");
-      if (refUrl.hostname.includes("myshopify.com")) return refUrl.hostname.toLowerCase();
-      const match = refUrl.pathname.match(/\/store\/([a-z0-9-]+)/i);
-      if (match && match[1]) return `${match[1].toLowerCase()}.myshopify.com`;
+      const refShop = normalizeShop(refUrl.searchParams.get("shop") || refUrl.searchParams.get("store") || "");
+      if (refShop) {
+        window.sessionStorage.setItem("margin_radar_shop", refShop);
+        return refShop;
+      }
+      const storeMatch = refUrl.pathname.match(/\/store\/([a-z0-9-]+)/i);
+      if (storeMatch && storeMatch[1]) {
+        const parsed = normalizeShop(storeMatch[1]);
+        if (parsed) {
+          window.sessionStorage.setItem("margin_radar_shop", parsed);
+          return parsed;
+        }
+      }
     }
-    const host = (window.location.hostname || "default-store").toLowerCase();
-    return host.replace(/[^a-z0-9.-]/g, "_");
+
+    const saved = normalizeShop(window.sessionStorage.getItem("margin_radar_shop") || "");
+    if (saved) return saved;
+    return "";
   } catch (_) {
-    return "default-store";
+    return "";
   }
 }
 
-const STORE_KEY = detectStoreKey();
-const STORAGE_KEY = "margin_radar_v1:" + STORE_KEY;
+const SHOP_DOMAIN = detectShopDomain();
 
-/* ===== services/defaultOrders.js ===== */
-const DEFAULT_ORDERS = [
-  {id:"#1041",product:"Magnetic Car Mount",sku:"MCM-01",supplier:"Guangzhou Tech",revenue:32.0,cogs:8.5,shipping:4.9,discount:0,ads:9.4,status:"In transit",daysLate:0,trackingChecks:1,refundRisk:6},
-  {id:"#1042",product:"Cloud Slippers",sku:"CS-04",supplier:"Jinjiang Footwear",revenue:24.5,cogs:6.8,shipping:4.5,discount:2.5,ads:11.2,status:"Delayed",daysLate:7,trackingChecks:6,refundRisk:48},
-  {id:"#1043",product:"Portable Neck Fan",sku:"PNF-09",supplier:"Shenzhen Cool",revenue:36.0,cogs:10.4,shipping:5.6,discount:3.0,ads:8.2,status:"Delivered",daysLate:0,trackingChecks:1,refundRisk:4},
-  {id:"#1044",product:"Lint Remover Pro",sku:"LRP-02",supplier:"Yiwu Home",revenue:18.9,cogs:5.2,shipping:4.1,discount:0,ads:7.8,status:"Awaiting pickup",daysLate:4,trackingChecks:3,refundRisk:24},
-  {id:"#1045",product:"Cloud Slippers",sku:"CS-04",supplier:"Jinjiang Footwear",revenue:24.5,cogs:6.8,shipping:4.5,discount:4.0,ads:13.1,status:"Delayed",daysLate:9,trackingChecks:8,refundRisk:68},
-  {id:"#1046",product:"Magnetic Car Mount",sku:"MCM-01",supplier:"Guangzhou Tech",revenue:32.0,cogs:8.5,shipping:4.9,discount:0,ads:7.5,status:"Delivered",daysLate:0,trackingChecks:0,refundRisk:3}
-];
-
-/* ===== lib/num.js ===== */
 const num = (v, d = 0) => {
   if (v === "" || v === null || v === undefined) return d;
   const n = typeof v === "string" ? parseFloat(v) : v;
@@ -271,10 +281,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
 }[c]));
 
-/* ===== domain/profit.js ===== */
-let profitCache = new WeakMap();
 function calcProfit(o) {
-  if (profitCache.has(o)) return profitCache.get(o);
   const revenue = Math.max(0, num(o.revenue));
   const discount = Math.max(0, num(o.discount));
   const cogs = Math.max(0, num(o.cogs));
@@ -283,11 +290,10 @@ function calcProfit(o) {
   const fees = o.fees != null ? Math.max(0, num(o.fees)) : revenue > 0 ? revenue * 0.029 + 0.3 : 0;
   const net = revenue - discount - cogs - shipping - fees - ads;
   const margin = revenue > 0 ? (net / revenue) * 100 : 0;
-  const incomplete = o.revenue === "" || o.revenue == null || o.ads === "" || o.ads == null;
-  const r = {revenue, discount, cogs, shipping, fees, ads, net, margin, incomplete};
-  profitCache.set(o, r);
-  return r;
+  const incomplete = revenue <= 0;
+  return {revenue, discount, cogs, shipping, fees, ads, net, margin, incomplete};
 }
+
 function totals(list) {
   const t = list.reduce((a, o) => {
     const p = calcProfit(o);
@@ -297,7 +303,8 @@ function totals(list) {
   }, {rev: 0, net: 0});
   return {...t, margin: t.rev > 0 ? (t.net / t.rev) * 100 : 0};
 }
-function byProduct(list) {
+
+function byProduct(list, catalogProducts = []) {
   const m = new Map();
   list.forEach(o => {
     const p = calcProfit(o);
@@ -308,15 +315,26 @@ function byProduct(list) {
     e.net += p.net;
     m.set(k, e);
   });
+
+  if (m.size === 0 && Array.isArray(catalogProducts) && catalogProducts.length > 0) {
+    catalogProducts.forEach((pr, idx) => {
+      const k = pr.sku || pr.id || `PROD-${idx + 1}`;
+      m.set(k, {
+        id: k,
+        product: pr.title || pr.product || "Store product",
+        count: 0,
+        revenue: num(pr.price, 0),
+        net: 0
+      });
+    });
+  }
+
   return [...m.values()]
     .map(e => ({...e, margin: e.revenue > 0 ? (e.net / e.revenue) * 100 : 0}))
     .sort((a, b) => a.net - b.net);
 }
 
-/* ===== domain/risk.js ===== */
-let riskCache = new WeakMap();
 function calcRisk(o) {
-  if (riskCache.has(o)) return riskCache.get(o);
   const late = Math.max(0, num(o.daysLate));
   const checks = Math.max(0, num(o.trackingChecks));
   const refund = Math.min(100, Math.max(0, num(o.refundRisk)));
@@ -333,10 +351,9 @@ function calcRisk(o) {
     tracking: `Tracking checked ${checks} times. Send a proactive status update before a dispute opens.`,
     refund: `Refund risk is ${refund}%. Offer a targeted resolution or reship before chargeback escalation.`
   };
-  const r = {score, level, action: level === "low" ? "No action needed." : actions[top], late, checks, refund};
-  riskCache.set(o, r);
-  return r;
+  return {score, level, action: level === "low" ? "No action needed." : actions[top], late, checks, refund};
 }
+
 const LABEL = {high: "High", med: "Medium", low: "Low"};
 const badge = l => `<span class="badge b-${l}">${LABEL[l]}</span>`;
 
@@ -347,19 +364,18 @@ function priorities(list) {
     if (r.level === "high") {
       items.push({w: 100 + r.score, o, title: `${o.id} ${o.product}: ${r.late}d delay`, text: r.action});
     } else if (p.net < 0 && !p.incomplete) {
-      items.push({w: 60 + Math.abs(p.net), o, title: `${o.id} net loss ${money(Math.abs(p.net))}`, text: "Ad, shipping, and COGS exceed revenue on this order. Adjust ad spend or pricing."});
-    } else if (p.incomplete) {
-      items.push({w: 20, o, title: `${o.id} missing cost fields`, text: "Set revenue and ad spend to calculate exact profit."});
+      items.push({w: 60 + Math.abs(p.net), o, title: `${o.id} net loss ${money(Math.abs(p.net))}`, text: "Costs exceed revenue on this order. Adjust pricing, shipping, or ad spend."});
     }
   });
   return items.sort((a, b) => b.w - a.w).slice(0, 3);
 }
 
-/* ===== store.js ===== */
 const state = {
+  shop: SHOP_DOMAIN,
   orders: [],
-  status: "loading",
-  sourceMode: "local", // "live" | "local"
+  products: [],
+  status: "loading", // "loading" | "needs_shop" | "needs_auth" | "ready" | "error"
+  errorMsg: "",
   tab: "profit",
   view: "orders",
   modalMode: null,
@@ -369,92 +385,104 @@ const state = {
 };
 const $ = id => document.getElementById(id);
 
-function resetCaches() {
-  profitCache = new WeakMap();
-  riskCache = new WeakMap();
-}
-
-function readStoredOrders() {
+function startOAuth(shop) {
+  const targetShop = normalizeShop(shop || state.shop);
+  if (!targetShop) return;
+  const authUrl = `https://radar-margin.vercel.app/api/auth?shop=${encodeURIComponent(targetShop)}`;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return JSON.parse(JSON.stringify(DEFAULT_ORDERS));
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : JSON.parse(JSON.stringify(DEFAULT_ORDERS));
-  } catch (_) {
-    return JSON.parse(JSON.stringify(DEFAULT_ORDERS));
-  }
-}
-
-function saveOrders(list) {
-  state.orders = list;
-  resetCaches();
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  } catch (_) {}
-}
-
-async function fetchLiveStoreOrders(shop) {
-  if (!shop || !shop.endsWith(".myshopify.com")) return null;
-  try {
-    const res = await fetch(`/api/orders?shop=${encodeURIComponent(shop)}`, {cache: "no-store"});
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data && data.ok === true && Array.isArray(data.orders)) {
-      return data.orders;
+    if (window.top && window.top !== window) {
+      window.top.location.href = authUrl;
+      return;
     }
-    return null;
-  } catch (_) {
-    return null;
-  }
+  } catch (_) {}
+  window.location.href = authUrl;
 }
 
-async function loadOrders(forceDefault = false) {
+async function loadLiveStoreData() {
   const token = ++state.loadToken;
   state.status = "loading";
+  state.errorMsg = "";
   render();
 
   if ($("fail").checked) {
     if (token !== state.loadToken) return;
     state.status = "error";
+    state.errorMsg = "Simulated load failure enabled.";
     render();
     return;
   }
 
-  if (forceDefault) {
-    try { window.localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+  const shop = normalizeShop(state.shop);
+  if (!shop) {
+    if (token !== state.loadToken) return;
+    state.status = "needs_shop";
+    render();
+    return;
   }
 
-  const liveOrders = await fetchLiveStoreOrders(STORE_KEY);
-  if (token !== state.loadToken) return;
+  try {
+    const ordersRes = await fetch(`/api/orders?shop=${encodeURIComponent(shop)}`, {cache: "no-store"});
+    const ordersData = await ordersRes.json();
+    if (token !== state.loadToken) return;
 
-  resetCaches();
-  if (Array.isArray(liveOrders) && liveOrders.length > 0) {
-    state.sourceMode = "live";
-    state.orders = liveOrders.filter(o => o && o.id);
-    state.status = state.orders.length ? "ready" : "empty";
-  } else {
-    state.sourceMode = "local";
-    const localData = readStoredOrders();
-    state.orders = localData.filter(o => o && o.id);
-    state.status = state.orders.length ? "ready" : "empty";
+    if (ordersData && ordersData.source === "unconfigured") {
+      state.status = "needs_auth";
+      render();
+      return;
+    }
+
+    if (!ordersRes.ok || !ordersData || ordersData.ok !== true) {
+      state.status = "error";
+      state.errorMsg = (ordersData && ordersData.error) || "Failed to fetch live orders from store.";
+      render();
+      return;
+    }
+
+    let liveProducts = [];
+    try {
+      const prodRes = await fetch(`/api/products?shop=${encodeURIComponent(shop)}`, {cache: "no-store"});
+      if (prodRes.ok) {
+        const prodData = await prodRes.json();
+        if (prodData && prodData.ok === true && Array.isArray(prodData.products)) {
+          liveProducts = prodData.products;
+        }
+      }
+    } catch (_) {}
+
+    if (token !== state.loadToken) return;
+    state.orders = Array.isArray(ordersData.orders) ? ordersData.orders.filter(o => o && o.id) : [];
+    state.products = liveProducts;
+    state.status = "ready";
+    render();
+  } catch (err) {
+    if (token !== state.loadToken) return;
+    state.status = "error";
+    state.errorMsg = err && err.message ? err.message : "Network error while loading store data.";
+    render();
   }
-  render();
 }
 
-/* ===== ui/render.js ===== */
 function renderHeaderMeta() {
-  const modeLabel = state.sourceMode === "live" ? "Live Shopify API" : "Local store workspace";
-  $("app-sub").textContent = `Store: ${STORE_KEY} · ${modeLabel}`;
-  $("store-foot").textContent = `Store key: ${STORE_KEY} · Mode: ${modeLabel} · Zero AI token usage.`;
   const pill = $("sync");
-  if (state.status === "error") {
-    pill.textContent = "Load error";
-    pill.classList.remove("live");
-  } else if (state.sourceMode === "live") {
-    pill.textContent = "Live store data";
-    pill.classList.add("live");
+  if (state.shop) {
+    $("app-sub").textContent = `Store: ${state.shop} · Live Shopify store analytics`;
+    $("store-foot").textContent = `Connected store: ${state.shop} · Source: /api/orders`;
   } else {
-    pill.textContent = "Store workspace";
+    $("app-sub").textContent = "Connect a Shopify store to load live orders, net profit, and products.";
+    $("store-foot").textContent = "No shop domain detected yet · Multi-store OAuth ready.";
+  }
+
+  if (state.status === "ready") {
+    pill.textContent = "Live Shopify store";
+    pill.classList.add("live");
+  } else if (state.status === "needs_auth") {
+    pill.textContent = "Authorization required";
+    pill.classList.remove("live");
+  } else if (state.status === "error") {
+    pill.textContent = "Sync error";
+    pill.classList.remove("live");
+  } else {
+    pill.textContent = "Store sync";
     pill.classList.remove("live");
   }
 }
@@ -466,7 +494,7 @@ function renderKpis() {
   const risky = state.orders.filter(o => calcRisk(o).level !== "low").length;
   const cls = t.net < 0 ? "neg" : "pos";
   el.innerHTML = `
-    <div class="card kpi"><small>Gross revenue</small><b class="num">${money(t.rev)}</b><i>Before costs</i></div>
+    <div class="card kpi"><small>Gross revenue</small><b class="num">${money(t.rev)}</b><i>Live store orders</i></div>
     <div class="card kpi net"><small>True net profit</small><b class="num ${cls}">${money(t.net)}</b><i>After COGS, shipping, fees, discounts, ads</i></div>
     <div class="card kpi"><small>Net margin</small><b class="num ${cls}">${pct(t.margin)}</b><i>True net profit / gross revenue</i></div>
     <div class="card kpi"><small>Orders at risk</small><b class="num">${risky} of ${state.orders.length}</b><i>Medium or high risk</i></div>`;
@@ -475,7 +503,7 @@ function renderKpis() {
 function renderPrio() {
   const el = $("prio");
   if (state.status !== "ready") {
-    el.innerHTML = `<div class="card state">${state.status === "loading" ? "Loading store data\u2026" : "No store data available."}</div>`;
+    el.innerHTML = `<div class="card state">${state.status === "loading" ? "Loading live store data\u2026" : "Connect and authorize your store to view live priorities."}</div>`;
     return;
   }
   const items = priorities(state.orders);
@@ -486,7 +514,7 @@ function renderPrio() {
         <span><b>${esc(p.title)}</b><span class="t">${p.text}</span></span>
         <span aria-hidden="true">&rsaquo;</span>
       </button>`).join("")
-    : `<div class="card state">No high-priority alerts right now.</div>`;
+    : `<div class="card state">No high-priority alerts on live orders right now.</div>`;
 }
 
 function renderPanel() {
@@ -495,15 +523,41 @@ function renderPanel() {
     el.innerHTML = `<div class="card" style="margin-top:14px">${'<div class="skel"></div>'.repeat(4)}</div>`;
     return;
   }
+  if (state.status === "needs_shop") {
+    el.innerHTML = `
+      <div class="card state" style="margin-top:14px">
+        <b>Enter your Shopify store domain</b><br>
+        Example: <code>your-store.myshopify.com</code><br>
+        <div style="max-width:340px;margin:12px auto 0;display:flex;gap:8px">
+          <input id="manual-shop" type="text" placeholder="store-name.myshopify.com" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:7px 10px">
+          <button class="btn" type="button" id="btn-set-shop" style="margin-top:0">Connect</button>
+        </div>
+      </div>`;
+    return;
+  }
+  if (state.status === "needs_auth") {
+    el.innerHTML = `
+      <div class="card state" style="margin-top:14px">
+        <b>Store not authorized yet (${esc(state.shop)})</b><br>
+        Complete OAuth installation once to store this store's access token and load live data.<br>
+        <button class="btn" type="button" data-auth>Authorize ${esc(state.shop)}</button>
+      </div>`;
+    return;
+  }
   if (state.status === "error") {
-    el.innerHTML = `<div class="card state" style="margin-top:14px"><b>Couldn\u2019t load store metrics.</b><br>Retry or uncheck simulated failure.<br><button class="btn" type="button" data-retry>Retry</button></div>`;
+    el.innerHTML = `
+      <div class="card state" style="margin-top:14px">
+        <b>Couldn\u2019t load live store data.</b><br>${esc(state.errorMsg || "Check server logs and environment variables.")}<br>
+        <button class="btn" type="button" data-retry>Retry</button>
+      </div>`;
     return;
   }
-  if (state.status === "empty") {
-    el.innerHTML = `<div class="card state" style="margin-top:14px"><b>No orders in this store yet.</b><br>Add an order or restore defaults.<br><button class="btn" type="button" data-create>+ Add order</button> <button class="btn ghost" type="button" data-retry>Restore defaults</button></div>`;
-    return;
-  }
+
   if (state.tab === "radar") {
+    if (!state.orders.length) {
+      el.innerHTML = `<div class="card state" style="margin-top:14px"><b>No orders found in ${esc(state.shop)}.</b></div>`;
+      return;
+    }
     const list = state.orders.map(o => ({o, r: calcRisk(o)})).sort((a, b) => b.r.score - a.r.score);
     el.innerHTML = `<div class="radar" style="margin-top:14px">${list.map(({o, r}) => `
       <button class="card ritem" type="button" data-open="${esc(o.id)}" data-kind="order">
@@ -513,9 +567,21 @@ function renderPanel() {
       </button>`).join("")}</div>`;
     return;
   }
+
   const prod = state.view === "products";
+  const productRows = byProduct(state.orders, state.products);
+
+  if (!prod && !state.orders.length) {
+    el.innerHTML = `<div class="card state" style="margin-top:14px"><b>No orders found in ${esc(state.shop)}.</b><br>Switch to <b>Products</b> to inspect store catalog items.</div>`;
+    return;
+  }
+  if (prod && !productRows.length) {
+    el.innerHTML = `<div class="card state" style="margin-top:14px"><b>No products found in ${esc(state.shop)}.</b></div>`;
+    return;
+  }
+
   const rows = prod
-    ? byProduct(state.orders).map(e => `
+    ? productRows.map(e => `
       <tr tabindex="0" data-open="${esc(e.id)}" data-kind="product">
         <td>${esc(e.product)}</td>
         <td class="num">${e.count}</td>
@@ -534,9 +600,11 @@ function renderPanel() {
         <td>${badge(r.level)}</td>
       </tr>`;
     }).join("");
+
   const head = prod
     ? "<th>Product</th><th>Orders</th><th>Revenue</th><th>Net profit</th><th>Margin</th>"
     : "<th>Order</th><th>Revenue</th><th>Net profit</th><th>Margin</th><th>Risk</th>";
+
   el.innerHTML = `
     <div class="bar-row">
       <div class="seg" role="group" aria-label="Group by">
@@ -557,137 +625,10 @@ function render() {
   });
 }
 
-/* ===== ui/drawer.js ===== */
-function drawerViewHtml(o) {
-  const p = calcProfit(o), r = calcRisk(o);
-  const line = (l, v, neg) => `<div class="row"><span>${l}</span><span class="num">${neg ? "\u2212" : ""}${money(v)}</span></div>`;
-  return `
-    <div class="row"><span>${badge(r.level)}</span><span class="num">Risk ${r.score}/100</span></div>
-    <div class="act"><b>Next action</b><br>${r.action}</div>
-    ${line("Gross revenue", p.revenue)}
-    ${line("Discounts", p.discount, 1)}
-    ${line("Product cost (COGS)", p.cogs, 1)}
-    ${line("Shipping", p.shipping, 1)}
-    ${line("Payment fees (est.)", p.fees, 1)}
-    ${line("Ads and other", p.ads, 1)}
-    <div class="row total"><span>True net profit</span><span class="num ${p.net < 0 ? "neg" : "pos"}">${money(p.net)}</span></div>
-    <div class="row"><span>Margin</span><span class="num">${pct(p.margin)}</span></div>
-    <div class="row"><span>Status</span><span>${esc(o.status || "In transit")}</span></div>
-    <div class="row"><span>Days late / Tracking checks</span><span class="num">${r.late}d / ${r.checks}</span></div>
-    <div class="d-actions">
-      <button class="btn" type="button" data-edit="${esc(o.id)}">Edit metrics</button>
-      <button class="btn danger" type="button" data-delete="${esc(o.id)}">Delete</button>
-    </div>`;
-}
-
-function drawerFormHtml(o) {
-  const isNew = !o;
-  const item = o || {
-    id: "#" + Math.floor(1100 + Math.random() * 8800),
-    product: "",
-    sku: "",
-    supplier: "",
-    revenue: 30,
-    cogs: 8,
-    shipping: 5,
-    discount: 0,
-    ads: 8,
-    status: "In transit",
-    daysLate: 0,
-    trackingChecks: 1,
-    refundRisk: 10
-  };
-  return `
-    <form id="order-form">
-      <div class="grid2">
-        <div class="field">
-          <label for="f-id">Order ID</label>
-          <input id="f-id" name="id" value="${esc(item.id)}" required>
-        </div>
-        <div class="field">
-          <label for="f-sku">SKU</label>
-          <input id="f-sku" name="sku" value="${esc(item.sku)}" placeholder="e.g. SKU-01">
-        </div>
-      </div>
-      <div class="field">
-        <label for="f-product">Product name</label>
-        <input id="f-product" name="product" value="${esc(item.product)}" placeholder="e.g. Posture Strap" required>
-      </div>
-      <div class="grid2">
-        <div class="field">
-          <label for="f-supplier">Supplier</label>
-          <input id="f-supplier" name="supplier" value="${esc(item.supplier)}" placeholder="e.g. CJ / Supplier">
-        </div>
-        <div class="field">
-          <label for="f-status">Fulfillment status</label>
-          <select id="f-status" name="status">
-            ${["In transit","Delayed","Delivered","Awaiting pickup","Processing"].map(st =>
-              `<option value="${st}" ${item.status === st ? "selected" : ""}>${st}</option>`
-            ).join("")}
-          </select>
-        </div>
-      </div>
-      <div class="grid2">
-        <div class="field">
-          <label for="f-rev">Revenue ($)</label>
-          <input id="f-rev" name="revenue" type="number" step="0.01" min="0" value="${num(item.revenue)}">
-        </div>
-        <div class="field">
-          <label for="f-cogs">COGS ($)</label>
-          <input id="f-cogs" name="cogs" type="number" step="0.01" min="0" value="${num(item.cogs)}">
-        </div>
-      </div>
-      <div class="grid2">
-        <div class="field">
-          <label for="f-ship">Shipping cost ($)</label>
-          <input id="f-ship" name="shipping" type="number" step="0.01" min="0" value="${num(item.shipping)}">
-        </div>
-        <div class="field">
-          <label for="f-ads">Ad spend ($)</label>
-          <input id="f-ads" name="ads" type="number" step="0.01" min="0" value="${num(item.ads)}">
-        </div>
-      </div>
-      <div class="grid2">
-        <div class="field">
-          <label for="f-disc">Discount ($)</label>
-          <input id="f-disc" name="discount" type="number" step="0.01" min="0" value="${num(item.discount)}">
-        </div>
-        <div class="field">
-          <label for="f-late">Days late</label>
-          <input id="f-late" name="daysLate" type="number" step="1" min="0" value="${Math.max(0, Math.round(num(item.daysLate)))}">
-        </div>
-      </div>
-      <div class="grid2">
-        <div class="field">
-          <label for="f-checks">Tracking checks</label>
-          <input id="f-checks" name="trackingChecks" type="number" step="1" min="0" value="${Math.max(0, Math.round(num(item.trackingChecks)))}">
-        </div>
-        <div class="field">
-          <label for="f-refund">Refund risk (%)</label>
-          <input id="f-refund" name="refundRisk" type="number" step="1" min="0" max="100" value="${Math.min(100, Math.max(0, Math.round(num(item.refundRisk))))}">
-        </div>
-      </div>
-      <div class="d-actions">
-        <button class="btn" type="submit">${isNew ? "Save order" : "Update order"}</button>
-        <button class="btn ghost" type="button" id="cancel-form">Cancel</button>
-      </div>
-    </form>`;
-}
-
 function openDrawer({mode, id = null, kind = "order"}) {
   let title = "", sub = "", body = "";
-  if (mode === "create") {
-    title = "Add store order";
-    sub = `Store: ${STORE_KEY}`;
-    body = drawerFormHtml(null);
-  } else if (mode === "edit") {
-    const o = state.orders.find(x => x.id === id);
-    if (!o) return;
-    title = `Edit ${o.id}`;
-    sub = o.product;
-    body = drawerFormHtml(o);
-  } else if (kind === "product") {
-    const e = byProduct(state.orders).find(x => x.id === id);
+  if (kind === "product") {
+    const e = byProduct(state.orders, state.products).find(x => x.id === id);
     if (!e) return;
     title = e.product;
     sub = `${e.count} orders · SKU ${e.id}`;
@@ -698,9 +639,23 @@ function openDrawer({mode, id = null, kind = "order"}) {
   } else {
     const o = state.orders.find(x => x.id === id);
     if (!o) return;
+    const p = calcProfit(o), r = calcRisk(o);
+    const line = (l, v, neg) => `<div class="row"><span>${l}</span><span class="num">${neg ? "\u2212" : ""}${money(v)}</span></div>`;
     title = `${o.id} \u00b7 ${o.product}`;
-    sub = `Supplier: ${o.supplier || "Unknown"}`;
-    body = drawerViewHtml(o);
+    sub = `Supplier: ${o.supplier || "Shopify Store"}`;
+    body = `
+      <div class="row"><span>${badge(r.level)}</span><span class="num">Risk ${r.score}/100</span></div>
+      <div class="act"><b>Next action</b><br>${r.action}</div>
+      ${line("Gross revenue", p.revenue)}
+      ${line("Discounts", p.discount, 1)}
+      ${line("Product cost (COGS)", p.cogs, 1)}
+      ${line("Shipping", p.shipping, 1)}
+      ${line("Payment fees (est.)", p.fees, 1)}
+      ${line("Ads and other", p.ads, 1)}
+      <div class="row total"><span>True net profit</span><span class="num ${p.net < 0 ? "neg" : "pos"}">${money(p.net)}</span></div>
+      <div class="row"><span>Margin</span><span class="num">${pct(p.margin)}</span></div>
+      <div class="row"><span>Status</span><span>${esc(o.status || "In transit")}</span></div>
+      <div class="row"><span>Days late / Tracking checks</span><span class="num">${r.late}d / ${r.checks}</span></div>`;
   }
 
   if (state.modalMode === null) state.lastFocus = document.activeElement;
@@ -727,25 +682,19 @@ function closeDrawer() {
   if (f && document.contains(f)) f.focus({preventScroll: true});
 }
 
-/* ===== main.js ===== */
 document.addEventListener("click", e => {
   const t = e.target;
   if (t === $("scrim")) return closeDrawer();
-  if (t.closest("#close") || t.closest("#cancel-form")) return closeDrawer();
-  if (t.closest("#btn-new") || t.closest("[data-create]")) return openDrawer({mode: "create"});
-  if (t.closest("#btn-reset")) return loadOrders(true);
+  if (t.closest("#close")) return closeDrawer();
+  if (t.closest("#btn-connect") || t.closest("[data-auth]")) return startOAuth(state.shop);
+  if (t.closest("#btn-refresh") || t.closest("[data-retry]")) return loadLiveStoreData();
 
-  const editBtn = t.closest("[data-edit]");
-  if (editBtn) return openDrawer({mode: "edit", id: editBtn.dataset.edit});
-
-  const delBtn = t.closest("[data-delete]");
-  if (delBtn) {
-    const targetId = delBtn.dataset.delete;
-    const next = state.orders.filter(x => x.id !== targetId);
-    saveOrders(next);
-    state.status = next.length ? "ready" : "empty";
-    closeDrawer();
-    return render();
+  if (t.closest("#btn-set-shop")) {
+    const val = normalizeShop($("manual-shop")?.value || "");
+    if (!val) return;
+    state.shop = val;
+    try { window.sessionStorage.setItem("margin_radar_shop", val); } catch (_) {}
+    return loadLiveStoreData();
   }
 
   const open = t.closest("[data-open]");
@@ -756,59 +705,18 @@ document.addEventListener("click", e => {
 
   const view = t.closest("[data-view]");
   if (view) { state.view = view.dataset.view; return render(); }
-
-  if (t.closest("[data-retry]")) return loadOrders(false);
-});
-
-document.addEventListener("submit", e => {
-  if (!e.target || e.target.id !== "order-form") return;
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  const entry = {
-    id: String(fd.get("id") || "").trim() || ("#" + Math.floor(1100 + Math.random() * 8800)),
-    product: String(fd.get("product") || "").trim() || "Store Product",
-    sku: String(fd.get("sku") || "").trim() || "SKU-CUSTOM",
-    supplier: String(fd.get("supplier") || "").trim() || "Direct Supplier",
-    status: String(fd.get("status") || "In transit"),
-    revenue: Math.max(0, num(fd.get("revenue"))),
-    cogs: Math.max(0, num(fd.get("cogs"))),
-    shipping: Math.max(0, num(fd.get("shipping"))),
-    ads: Math.max(0, num(fd.get("ads"))),
-    discount: Math.max(0, num(fd.get("discount"))),
-    daysLate: Math.max(0, Math.round(num(fd.get("daysLate")))),
-    trackingChecks: Math.max(0, Math.round(num(fd.get("trackingChecks")))),
-    refundRisk: Math.min(100, Math.max(0, Math.round(num(fd.get("refundRisk")))))
-  };
-
-  let next;
-  if (state.modalMode === "edit" && state.openId) {
-    next = state.orders.map(o => o.id === state.openId ? entry : o);
-  } else {
-    next = [entry, ...state.orders];
-  }
-  saveOrders(next);
-  state.status = next.length ? "ready" : "empty";
-  closeDrawer();
-  render();
 });
 
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape") return closeDrawer();
-  if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches("tr[data-open]")) {
-    e.preventDefault();
-    openDrawer({mode: "view", id: e.target.dataset.open, kind: e.target.dataset.kind || "order"});
-  }
-  if (e.key === "Tab" && state.modalMode !== null) {
-    const f = [...$("drawer").querySelectorAll("button,input,select,[tabindex='0']")].filter(el => !el.disabled);
-    if (!f.length) return;
-    const first = f[0], last = f[f.length - 1];
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  if (e.key === "Escape") closeDrawer();
+  if (e.key === "Enter" && e.target && e.target.matches("tbody tr[data-open]")) {
+    e.target.click();
   }
 });
 
-$("fail").addEventListener("change", () => loadOrders(false));
-loadOrders(false);
+$("fail").addEventListener("change", () => loadLiveStoreData());
+
+loadLiveStoreData();
 </script>
 </body>
 </html>
