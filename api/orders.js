@@ -1,35 +1,54 @@
 "use strict";
 
 function normalizeShop(raw) {
-  const s = String(raw || "").trim().toLowerCase();
-  if (!s) return "";
-  const clean = s.replace(/^https?:\/\//, "").split("/")[0];
-  if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(clean)) return "";
-  return clean;
+  const s = String(raw || "").trim().toLowerCase().replace(/^https?:\/\//, "").split("/")[0];
+  return /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(s) ? s : "";
 }
 
-function resolveAccessToken(shop) {
-  // Optional JSON map in env: {"store1.myshopify.com":"shpat_..."}
+async function resolveAccessToken(shop) {
+  const sbUrl = String(process.env.SUPABASE_URL || "").trim().replace(/\/+$/, "");
+  const sbKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+  if (sbUrl && sbKey) {
+    try {
+      const url = `${sbUrl}/rest/v1/shopify_stores?shop=eq.${encodeURIComponent(shop)}&select=access_token&limit=1`;
+      const r = await fetch(url, {
+        headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}` }
+      });
+      if (r.ok) {
+        const rows = await r.json();
+        const tok = rows?.[0]?.access_token;
+        if (typeof tok === "string" && tok.trim()) return tok.trim();
+      }
+    } catch (_) {}
+  }
+
+  const getHook = String(process.env.N8N_TOKEN_GET_URL || "").trim();
+  if (getHook) {
+    try {
+      const r = await fetch(`${getHook}?shop=${encodeURIComponent(shop)}`);
+      if (r.ok) {
+        const j = await r.json();
+        if (typeof j?.access_token === "string" && j.access_token.trim()) return j.access_token.trim();
+      }
+    } catch (_) {}
+  }
+
   if (process.env.SHOPIFY_STORE_TOKENS) {
     try {
       const map = JSON.parse(process.env.SHOPIFY_STORE_TOKENS);
-      if (map && typeof map === "object" && typeof map[shop] === "string" && map[shop].trim()) {
-        return map[shop].trim();
-      }
-    } catch (_) {
-      // Ignore malformed JSON map and fall back to single token
-    }
+      if (map && typeof map[shop] === "string" && map[shop].trim()) return map[shop].trim();
+    } catch (_) {}
   }
-  const single = String(process.env.SHOPIFY_ACCESS_TOKEN || "").trim();
-  return single || "";
+
+  return String(process.env.SHOPIFY_ACCESS_TOKEN || "").trim();
 }
 
 function daysBetween(isoDate) {
   if (!isoDate) return 0;
   const t = Date.parse(isoDate);
   if (!Number.isFinite(t)) return 0;
-  const diffDays = Math.floor((Date.now() - t) / 86400000);
-  return diffDays > 0 ? diffDays : 0;
+  const d = Math.floor((Date.now() - t) / 86400000);
+  return d > 0 ? d : 0;
 }
 
 function mapShopifyOrder(node, idx) {
@@ -57,9 +76,7 @@ function mapShopifyOrder(node, idx) {
     }
   });
 
-  // Fallback estimated COGS only when Shopify inventory unitCost is not set
   const cogs = hasUnitCost ? unitCostSum : Number((totalPrice * 0.28).toFixed(2));
-  // Default ad spend estimate editable later in UI per order
   const ads = Number((totalPrice * 0.22).toFixed(2));
 
   const fulfillments = Array.isArray(node?.fulfillments) ? node.fulfillments : [];
@@ -116,14 +133,13 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ ok: false, error: "Valid ?shop=store.myshopify.com is required" });
   }
 
-  const accessToken = resolveAccessToken(shop);
+  const accessToken = await resolveAccessToken(shop);
   if (!accessToken) {
     return res.status(200).json({
       ok: false,
       source: "unconfigured",
       shop,
-      orders: [],
-      message: "No Shopify Admin access token configured yet for this store."
+      orders: []
     });
   }
 
@@ -159,8 +175,7 @@ module.exports = async function handler(req, res) {
   `;
 
   try {
-    const endpoint = `https://${shop}/admin/api/2026-10/graphql.json`;
-    const response = await fetch(endpoint, {
+    const response = await fetch(`https://${shop}/admin/api/2026-10/graphql.json`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -170,42 +185,18 @@ module.exports = async function handler(req, res) {
     });
 
     if (!response.ok) {
-      return res.status(502).json({
-        ok: false,
-        source: "shopify_error",
-        shop,
-        orders: [],
-        error: `Shopify API responded with status ${response.status}`
-      });
+      return res.status(502).json({ ok: false, source: "shopify_error", shop, orders: [] });
     }
 
     const json = await response.json();
     if (Array.isArray(json.errors) && json.errors.length > 0) {
-      return res.status(502).json({
-        ok: false,
-        source: "graphql_error",
-        shop,
-        orders: [],
-        error: json.errors[0]?.message || "GraphQL error"
-      });
+      return res.status(502).json({ ok: false, source: "graphql_error", shop, orders: [] });
     }
 
     const rawNodes = json?.data?.orders?.nodes;
     const orders = Array.isArray(rawNodes) ? rawNodes.map(mapShopifyOrder) : [];
-
-    return res.status(200).json({
-      ok: true,
-      source: "shopify_live",
-      shop,
-      orders
-    });
-  } catch (err) {
-    return res.status(500).json({
-      ok: false,
-      source: "network_error",
-      shop,
-      orders: [],
-      error: err?.message || "Failed to fetch Shopify orders"
-    });
+    return res.status(200).json({ ok: true, source: "shopify_live", shop, orders });
+  } catch (_) {
+    return res.status(500).json({ ok: false, source: "network_error", shop, orders: [] });
   }
 };
